@@ -1,0 +1,48 @@
+From ee6e8727a0b56359b2cf0a8304e616391e34b94c Mon Sep 17 00:00:00 2001
+From: Nick Zalutskiy <nick@const.fun>
+Date: Sun, 6 Dec 2020 23:10:06 -0500
+Subject: [PATCH] Do not assume location of bins.
+
+---
+ test/test.ml | 18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
+
+diff --git a/test/test.ml b/test/test.ml
+index 1f62feb..3e006e6 100644
+--- a/test/test.ml
++++ b/test/test.ml
+@@ -351,8 +351,14 @@ let test_fexecve () =
+       Unix.dup2 s2 Unix.stdout;
+       Unix.close s1;
+       Unix.close s2;
+-      let fd = Unix.openfile "/bin/echo" [Unix.O_RDONLY] 0 in
+-      fexecve fd [| "/bin/echo"; "-n"; "fexecve" |] [| |]
++      let echo_bin = 
++        let in_ch = Unix.open_process_in "which echo" in
++        let out = input_line in_ch in
++        ignore (Unix.close_process_in in_ch);
++        out
++      in
++      let fd = Unix.openfile echo_bin [Unix.O_RDONLY] 0 in
++      fexecve fd [| echo_bin; "-n"; "fexecve" |] [| |]
+   | pid ->
+       Unix.close s2;
+       let wpid, _ = Unix.wait () in
+@@ -371,7 +377,13 @@ let test_sendmsg () =
+   match Unix.fork () with
+   | 0 ->
+       Unix.close s1;
+-      let fd = Unix.openfile "/bin/ls" [Unix.O_RDONLY] 0 in
++      let ls_bin = 
++        let in_ch = Unix.open_process_in "which ls" in
++        let out = input_line in_ch in
++        ignore (Unix.close_process_in in_ch);
++        out
++      in
++      let fd = Unix.openfile ls_bin [Unix.O_RDONLY] 0 in
+       let st = Unix.fstat fd in
+       sendmsg s2 ~sendfd:fd (sprintf "%d" st.Unix.st_ino);
+       Unix.close fd;
+-- 
+2.29.2
+
