@@ -57,6 +57,7 @@
        ("ocaml-ppxlib"  ,ocaml4.07-ppxlib)
        ("ocaml-extunix"  ,ocaml4.07-extunix)
        ("ocaml-re2"  ,ocaml4.07-re2)
+       ("ocaml-qrc"  ,ocaml4.07-qrc)
        ("libsodium"  ,libsodium)
        ;("coreutils"  ,coreutils)
        ;; ("git" ,git)
