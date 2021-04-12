@@ -121,7 +121,7 @@ Qrc is distributed under the ISC license. It has no dependencies.
 	(parameterize
 	    ((%patch-path
 	      (map (lambda (directory)
-		     (string-append directory "/gnu/packages/patches"))
+		     (string-append directory "/mygnu/packages/patches"))
 		   %load-path)))
 
 	  (search-patches "ocaml-extunix-do-not-assume-ls-bin-path.patch")))
