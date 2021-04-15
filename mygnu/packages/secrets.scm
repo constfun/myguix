@@ -29,10 +29,10 @@
     (source
      (origin
        (method url-fetch)
-       (uri "https://gitlab.com/constfun/secrets/-/archive/master/secrets-master.tar.gz")
+       (uri "https://github.com/constfun/secrets/archive/7e787f4041f8d6d01839fd41484cc959ab63ea1a.zip")
        (sha256
 	(base32
-         "0ng988frzs6z0c3wn32wf6dl3y5dazc9555zg4kxw1v779gnxqnq"))))
+         "0i0yizl3njjw4xqw67wrammrrv2sa7wbs8b59hsn6s7hffbib7ym"))))
     ;; (outputs '("out" "lib" "bin"))
     (build-system dune-build-system)
     (arguments
