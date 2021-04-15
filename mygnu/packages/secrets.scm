@@ -29,10 +29,10 @@
     (source
      (origin
        (method url-fetch)
-       (uri "https://github.com/constfun/secrets/archive/7e787f4041f8d6d01839fd41484cc959ab63ea1a.zip")
+       (uri "https://github.com/constfun/secrets/archive/f620d2c5a0723e17a4b0239bfdd081a8ff8c16d6.zip")
        (sha256
 	(base32
-         "0i0yizl3njjw4xqw67wrammrrv2sa7wbs8b59hsn6s7hffbib7ym"))))
+         "0v2h7ha6iliaapyrpl73rdr2r6ngiv86v32dmbjhb77my62bf3ab"))))
     ;; (outputs '("out" "lib" "bin"))
     (build-system dune-build-system)
     (arguments
