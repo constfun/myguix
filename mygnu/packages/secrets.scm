@@ -13,6 +13,7 @@
   #:use-module (gnu packages python)
   #:use-module (gnu packages ocaml)
   #:use-module (gnu packages crypto)
+  #:use-module (gnu packages libffi) 
   #:use-module (gnu packages version-control)
   #:use-module (mygnu packages ocaml-extunix)
   #:use-module (gnu packages xdisorg)
@@ -67,19 +68,94 @@
     (description "")
     (license #f)))
 
+(define-public ocaml-ANSITerminal
+  (package
+    (name "ocaml-ANSITerminal")
+    (version "0.8.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri "https://github.com/Chris00/ANSITerminal/releases/download/0.8.2/ANSITerminal-0.8.2.tbz")
+        (sha256
+          (base32
+            "04n15ki9h1qawlhkxbglzfbx0frm593nx2cahyh8riwc2g46q148"))))
+    (build-system dune-build-system)
+    (arguments `(#:tests? #f))
+    (home-page
+      "https://github.com/Chris00/ANSITerminal")
+    (synopsis
+      "Basic control of ANSI compliant terminals and the windows shell")
+    (description
+      "ANSITerminal is a module allowing to use the colors and cursor
+movements on ANSI terminals. It also works on the windows shell (but
+this part is currently work in progress).")
+    (license #f)))
+
+(define-public ocaml-sodium
+  (package
+    (name "ocaml-sodium")
+    (version "0.6.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri "https://github.com/dsheets/ocaml-sodium/archive/0.6.0.tar.gz")
+       (sha256
+	(base32
+	 "0gilc2mg0kf4rag95cl507rajcasdpnff8idv8cf58c1b90lvqbf"))))
+    (build-system ocaml-build-system)
+    (arguments
+     `(
+       #:phases
+       (modify-phases %standard-phases
+	 (delete 'configure)
+	 (add-before 'build 'set-patch-makefile
+	   (lambda* (#:key inputs #:allow-other-keys)
+	     ;; Use gcc instead of cc
+	     (substitute* "myocamlbuild.ml"
+	       (("\"cc\"") "\"gcc\""))
+	     ;; Add ocaml-integers include path
+	     (substitute* "myocamlbuild.ml"
+	       (("A\"-o\";") (string-append "A(\"-I\"); "
+					    "A \"" (assoc-ref inputs "ocaml-integers") "/lib/ocaml/site-lib/integers\"; "
+					    "A\"-o\";")))
+	     ;; Add dll load path
+	     (substitute* "Makefile"
+	       (("^OCAMLBUILD=..ENV. ocamlbuild")
+		(string-append "OCAMLBUILD=$(ENV) ocamlbuild -ocamlc 'ocamlc -dllpath-all' -cflags -ccopt,-I'" (assoc-ref inputs "ocaml-integers") "/lib/ocaml/site-lib/integers' -cflags -ccopt,-Wno-discarded-qualifiers")))
+	     #t)))))
+    (propagated-inputs
+     `(("libsodium" ,libsodium)
+       ("ocaml-integers" ,ocaml-integers)
+       ("ocaml-ctypes" ,ocaml-ctypes)))
+    (native-inputs
+     `(("ocaml-findlib" ,ocaml-findlib)
+       ("ocamlbuild" ,ocamlbuild)
+       ("ocaml-ounit" ,ocaml-ounit)))
+    (home-page
+     "https://github.com/dsheets/ocaml-sodium/")
+    (synopsis "Binding to libsodium UNAUDITED")
+    (description
+     "Binding to libsodium 1.0.9+, a shared library wrapper for djb's NaCl.
+
+Binding uses ctypes' stub generation system. GNU/Linux, FreeBSD, and OS
+X are supported.
+
+UNAUDITED")
+    (license #f)))
+
 (define-public sof-firmware
   (package
     (name "sof-firmware")
     (version "v1.6.1")
     (home-page "https://github.com/thesofproject/sof-bin.git")
     (source (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/thesofproject/sof-bin.git")
-             (commit "53db4982df0f501efce5e01ced83797cf68ecce1")))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "1fd96ak4kgk88bqgjmqyn4jjd1p9kxqkpm9aranazr256h11fv5z"))))
+	      (method git-fetch)
+	      (uri (git-reference
+		    (url "https://github.com/thesofproject/sof-bin.git")
+		    (commit "53db4982df0f501efce5e01ced83797cf68ecce1")))
+	      (file-name (git-file-name name version))
+	      (sha256
+	       (base32 "1fd96ak4kgk88bqgjmqyn4jjd1p9kxqkpm9aranazr256h11fv5z"))))
     (build-system copy-build-system)
     (arguments
      `(#:install-plan
