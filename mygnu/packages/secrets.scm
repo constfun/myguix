@@ -23,77 +23,436 @@
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages gawk))
 
-;; (define-public libev
-;;   (package
-;;     (name "libev")
-;;     (version "4.31")
-;;     (source (origin
-;;               (method url-fetch)
-;;               (uri (string-append "http://dist.schmorp.de/libev/Attic/libev-"
-;;                                   version
-;;                                   ".tar.gz"))
-;;               (sha256
-;;                (base32
-;;                 "0nkfqv69wfyy2bpga4d53iqydycpik8jp8x6q70353hia8mmv1gd"))))
-;;     (build-system gnu-build-system)
-;;     ;; (arguments
-;;     ;;  '(#:configure-flags '("--disable-static")))
-;;     (home-page "http://software.schmorp.de/pkg/libev.html")
-;;     (synopsis "Event loop loosely modelled after libevent")
-;;     (description
-;;      "libev provides a full-featured and high-performance event loop that is
-;; loosely modelled after libevent.  It includes relative timers, absolute timers
-;; with customized rescheduling, synchronous signals, process status change
-;; events, event watchers dealing with the event loop itself, file watchers, and
-;; limited support for fork events.")
-;;     (license
-;;      (list bsd-2 gpl2+))))
+;; newer version of this needed by bin_prot or ppx_custom_printf
+(define-public ocaml-migrate-parsetree
+  (package
+    (name "ocaml-migrate-parsetree")
+    (version "2.1.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri "https://github.com/ocaml-ppx/ocaml-migrate-parsetree/releases/download/v2.1.0/ocaml-migrate-parsetree-v2.1.0.tbz")
+        (sha256
+          (base32
+            "07x7lm45kny0mi0fjvzw51445brm0dgy099cw0gpyly0wj77hyrq"))))
+    (build-system dune-build-system)
+    (arguments `(#:tests? #f))
+    (properties
+      `((upstream-name . "ocaml-migrate-parsetree")))
+    (home-page
+      "https://github.com/ocaml-ppx/ocaml-migrate-parsetree")
+    (synopsis
+      "Convert OCaml parsetrees between different versions")
+    (description
+      "Convert OCaml parsetrees between different versions
 
+This library converts parsetrees, outcometree and ast mappers between
+different OCaml versions.  High-level functions help making PPX
+rewriters independent of a compiler version.
+")
+    (license #f)))
 
+(define-public ocaml-ppxlib
+  (package
+    (name "ocaml-ppxlib")
+    (version "0.22.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri "https://github.com/ocaml-ppx/ppxlib/releases/download/0.22.0/ppxlib-0.22.0.tbz")
+        (sha256
+          (base32
+            "0ykdp55i6x1a5mbxjlvwcfvs4kvzxqnn2bi2lf224rk677h93sry"))))
+    (build-system dune-build-system)
+    (arguments
+     `(#:tests? #f))
+    (propagated-inputs
+      `(("ocaml-compiler-libs" ,ocaml-compiler-libs)
+        ("ocaml-migrate-parsetree"
+         ,ocaml-migrate-parsetree)
+        ("ocaml-ppx-derivers" ,ocaml-ppx-derivers)
+        ("ocaml-sexplib0" ,ocaml-sexplib0)
+        ("ocaml-stdlib-shims" ,ocaml-stdlib-shims)
+        ("ocaml-odoc" ,ocaml-odoc)))
+    (native-inputs
+      `(("ocaml-findlib" ,ocaml-findlib)
+        ("ocaml-re" ,ocaml-re)
+        ("ocaml-cinaps" ,ocaml-cinaps)
+        ("ocaml-base" ,ocaml-base)
+        ("ocaml-stdio" ,ocaml-stdio)))
+    (home-page "https://github.com/ocaml-ppx/ppxlib")
+    (synopsis "Standard library for ppx rewriters")
+    (description
+      "Ppxlib is the standard library for ppx rewriters and other programs
+that manipulate the in-memory reprensation of OCaml programs, a.k.a
+the \"Parsetree\".
 
-;; (define dune-bootstrap
-;;   (package
-;;     (name "dune")
-;;     (version "2.8.5")
-;;     (source (origin
-;;               (method git-fetch)
-;;               (uri (git-reference
-;;                      (url "https://github.com/ocaml/dune")
-;;                      (commit version)))
-;;               (file-name (git-file-name name version))
-;;               (sha256
-;;                (base32
-;;                 "10qgx83fq8b522y9mpllrp0l5cgmr2bs5s7aix5img21hlbm34in"))))
-;;     (build-system ocaml-build-system)
-;;     (arguments
-;;      `(#:tests? #f; require odoc
-;;        #:make-flags (list "release"
-;;                           (string-append "PREFIX=" (assoc-ref %outputs "out"))
-;;                           (string-append "LIBDIR=" (assoc-ref %outputs "out")
-;;                                          "/lib/ocaml/site-lib"))
-;;        #:phases
-;;        (modify-phases %standard-phases
-;;          (replace 'configure
-;;            (lambda* (#:key outputs #:allow-other-keys)
-;;              (mkdir-p "src/dune")
-;;              (invoke "./configure")
-;;              #t)))))
-;;     (home-page "https://github.com/ocaml/dune")
-;;     (synopsis "OCaml build system")
-;;     (description "Dune is a build system that was designed to simplify the
-;; release of Jane Street packages.  It reads metadata from @file{dune} files
-;; following a very simple s-expression syntax.")
-;;     (license #f)))
+It also comes bundled with two ppx rewriters that are commonly used to
+write tools that manipulate and/or generate Parsetree values;
+`ppxlib.metaquot` which allows to construct Parsetree values using the
+OCaml syntax directly and `ppxlib.traverse` which provides various
+ways of automatically traversing values of a given type, in particular
+allowing to inject a complex structured value into generated code.
+")
+    (license #f)))
 
-;; (define-public dune
-;;   (package
-;;     (inherit dune-bootstrap)
-;;     (propagated-inputs
-;;      `(("dune-configurator" ,dune-configurator)))
-;;     (properties `((ocaml4.07-variant . ,(delay ocaml4.07-dune))
-;;                   (ocaml4.09-variant . ,(delay ocaml4.09-dune))))))
+(define-public ocaml-uutf
+  (package
+    (name "ocaml-uutf")
+    (version "1.0.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri "http://erratique.ch/software/uutf/releases/uutf-1.0.2.tbz")
+       (sha256
+	(base32
+	 "1nx1rly3qj23jzn9yk3x6fwqimcxjd84kv5859vvhdg56psq26p6"))))
+    (build-system ocaml-build-system)
+    (arguments
+     `(
+       #:build-flags (list "build")
+       #:phases
+       (modify-phases %standard-phases
+	 (delete 'check)
+	 (delete 'configure))))
+    (inputs `(("opam" ,opam)))
+    (propagated-inputs
+     `(("ocaml-uchar" ,ocaml-uchar)
+       ("ocaml-cmdliner" ,ocaml-cmdliner)))
+    (native-inputs
+     `(("ocaml-findlib" ,ocaml-findlib)
+       ("ocamlbuild" ,ocamlbuild)
+       ("ocaml-topkg" ,ocaml-topkg)))
+    (home-page "http://erratique.ch/software/uutf")
+    (synopsis
+     "Non-blocking streaming Unicode codec for OCaml")
+    (description
+     "
+Uutf is a non-blocking streaming codec to decode and encode the UTF-8,
+UTF-16, UTF-16LE and UTF-16BE encoding schemes. It can efficiently
+work character by character without blocking on IO. Decoders perform
+character position tracking and support newline normalization.
 
+Functions are also provided to fold over the characters of UTF encoded
+OCaml string values and to directly encode characters in OCaml
+Buffer.t values.
 
+Uutf has no dependency and is distributed under the ISC license.
+")
+    (license #f)))
+
+(define-public ocaml-uunf
+  (package
+    (name "ocaml-uunf")
+    (version "13.0.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri "https://erratique.ch/software/uunf/releases/uunf-13.0.0.tbz")
+        (sha256
+          (base32
+            "1qci04nkp24kdls1z4s8kz5dzgky4nwd5r8345nwdrgwmxhw7ksm"))))
+    (build-system ocaml-build-system)
+    (arguments
+     `(
+       #:tests? #f
+       #:build-flags (list "build" "--with-uutf" "true")
+       #:phases
+       (modify-phases %standard-phases
+	 (delete 'check)
+	 (delete 'configure))
+       ))
+    (propagated-inputs `(("uutf" ,ocaml-uutf)))
+    (inputs `(("opam" ,opam)
+	      ("topkg" ,ocaml-topkg)))
+    (native-inputs
+      `(("ocaml-findlib" ,ocaml-findlib)
+        ("ocamlbuild" ,ocamlbuild)
+        ("ocaml-topkg" ,ocaml-topkg)))
+    (home-page "https://erratique.ch/software/uunf")
+    (synopsis "Unicode text normalization for OCaml")
+    (description
+      "
+Uunf is an OCaml library for normalizing Unicode text. It supports all
+Unicode [normalization forms][nf]. The library is independent from any
+IO mechanism or Unicode text data structure and it can process text
+without a complete in-memory representation.
+
+Uunf has no dependency. It may optionally depend on [Uutf][uutf] for
+support on OCaml UTF-X encoded strings. It is distributed under the
+ISC license.
+
+[nf]: http://www.unicode.org/reports/tr15/
+[uutf]: http://erratique.ch/software/uutf
+")
+    (license #f)))
+
+(define-public ocaml-uucd
+  (package
+    (name "ocaml-uucd")
+    (version "13.0.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri "https://erratique.ch/software/uucd/releases/uucd-13.0.0.tbz")
+        (sha256
+          (base32
+            "1fg77hg4ibidkv1x8hhzl8z3rzmyymn8m4i35jrdibb8adigi8v2"))))
+    (build-system ocaml-build-system)
+    (arguments
+     `(
+       #:build-flags (list "build")
+       #:phases
+       (modify-phases %standard-phases
+	 (delete 'check)
+	 (delete 'configure))))
+    (propagated-inputs `(("ocaml-xmlm" ,ocaml-xmlm)))
+    (inputs `(
+	      ("opam" ,opam)
+	      ("topkg" ,ocaml-topkg)))
+    (native-inputs
+      `(("ocaml-findlib" ,ocaml-findlib)
+        ("ocamlbuild" ,ocamlbuild)
+        ("ocaml-topkg" ,ocaml-topkg)))
+    (home-page "https://erratique.ch/software/uucd")
+    (synopsis
+      "Unicode character database decoder for OCaml")
+    (description
+      "
+Uucd is an OCaml module to decode the data of the [Unicode character 
+database][1] from its XML [representation][2]. It provides high-level 
+(but not necessarily efficient) access to the data so that efficient 
+representations can be extracted.
+
+Uucd is made of a single module, depends on [Xmlm][xmlm] and is distributed
+under the ISC license.
+
+[1]: http://www.unicode.org/reports/tr44/
+[2]: http://www.unicode.org/reports/tr42/
+[xmlm]: http://erratique.ch/software/xmlm 
+")
+    (license #f)))
+
+(define-public ocaml-uucp
+  (package
+    (name "ocaml-uucp")
+    (version "13.0.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri "https://erratique.ch/software/uucp/releases/uucp-13.0.0.tbz")
+        (sha256
+          (base32
+            "19kf8ypxaakacgg1dwwfzkc2zicaj88cmw11fw2z7zl24dn4gyiq"))))
+    (build-system ocaml-build-system)
+    (arguments
+     `(#:build-flags (list "build" "--with-uutf" "true" "--with-uunf" "true")
+       #:phases
+       (modify-phases %standard-phases
+	 (delete 'check)
+	 (delete 'configure))))
+    (native-inputs
+     `(
+       ("opam" ,opam)
+       ("ocaml-findlib" ,ocaml-findlib)
+       ("ocamlbuild" ,ocamlbuild)
+       ("ocaml-topkg" ,ocaml-topkg)
+       ("ocaml-uucd" ,ocaml-uucd)
+       ("ocaml-uunf" ,ocaml-uunf)
+       ("ocaml-uutf" ,ocaml-uutf)))
+    (home-page "https://erratique.ch/software/uucp")
+    (synopsis
+      "Unicode character properties for OCaml")
+    (description
+      "
+Uucp is an OCaml library providing efficient access to a selection of
+character properties of the [Unicode character database][1].
+
+Uucp is independent from any Unicode text data structure and has no
+dependencies. It is distributed under the ISC license.
+
+[1]: http://www.unicode.org/reports/tr44/
+")
+    (license #f)))
+
+(define-public ocaml-uuseg
+  (package
+    (name "ocaml-uuseg")
+    (version "13.0.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri "https://erratique.ch/software/uuseg/releases/uuseg-13.0.0.tbz")
+        (sha256
+          (base32
+            "1a635j8ra6p27g1ivfln3387lhwqmf6vq4r6bn7b6n1qsqyi1rls"))))
+    (build-system ocaml-build-system)
+    (arguments
+     `(#:build-flags (list "build" "--with-uutf" "true")
+       #:phases
+       (modify-phases %standard-phases
+	 (delete 'check)
+	 (delete 'configure))))
+    (inputs `(("opam" ,opam)))
+    (propagated-inputs
+     `(
+       ("uucp" ,ocaml-uucp)
+       ("uutf" ,ocaml-uutf)
+       ))
+    (native-inputs
+      `(("ocaml-findlib" ,ocaml-findlib)
+        ("ocamlbuild" ,ocamlbuild)
+        ("ocaml-topkg" ,ocaml-topkg)))
+    (home-page "https://erratique.ch/software/uuseg")
+    (synopsis "Unicode text segmentation for OCaml")
+    (description
+      "
+Uuseg is an OCaml library for segmenting Unicode text. It implements
+the locale independent [Unicode text segmentation algorithms][1] to
+detect grapheme cluster, word and sentence boundaries and the
+[Unicode line breaking algorithm][2] to detect line break
+opportunities.
+
+The library is independent from any IO mechanism or Unicode text data
+structure and it can process text without a complete in-memory
+representation.
+
+Uuseg depends on [Uucp](http://erratique.ch/software/uucp) and
+optionally on [Uutf](http://erratique.ch/software/uutf) for support on
+OCaml UTF-X encoded strings. It is distributed under the ISC license.
+
+[1]: http://www.unicode.org/reports/tr29/
+[2]: http://www.unicode.org/reports/tr14/
+")
+    (license #f)))
+
+(define-public ocaml-menhirSdk
+  (package
+    (name "ocaml-menhirSdk")
+    (version "20210419")
+    (source
+      (origin
+        (method url-fetch)
+        (uri "https://gitlab.inria.fr/fpottier/menhir/repository/20210419/archive.tar.gz")
+        (sha256
+          (base32
+            "1z471apfcfs9d1s85wg33z5prfnifzx07dprjxq4fgfpcbqpqh7q"))))
+    (build-system dune-build-system)
+    (arguments `(#:tests? #f))
+    (home-page
+      "http://gitlab.inria.fr/fpottier/menhir")
+    (synopsis
+      "Compile-time library for auxiliary tools related to Menhir")
+    (description #f)
+    (license #f)))
+
+(define-public ocaml-menhirLib
+  (package
+    (name "ocaml-menhirLib")
+    (version "20210419")
+    (source
+      (origin
+        (method url-fetch)
+        (uri "https://gitlab.inria.fr/fpottier/menhir/repository/20210419/archive.tar.gz")
+        (sha256
+          (base32
+            "1z471apfcfs9d1s85wg33z5prfnifzx07dprjxq4fgfpcbqpqh7q"))))
+    (build-system dune-build-system)
+    (arguments `(#:tests? #f))
+    (home-page
+      "http://gitlab.inria.fr/fpottier/menhir")
+    (synopsis
+      "Runtime support library for parsers generated by Menhir")
+    (description #f)
+    (license #f)))
+
+(define-public ocaml-fix
+  (package
+    (name "ocaml-fix")
+    (version "20201120")
+    (source
+      (origin
+        (method url-fetch)
+        (uri "https://gitlab.inria.fr/fpottier/fix/repository/20201120/archive.tar.gz")
+        (sha256
+          (base32
+            "02xyn3wfcmz8if72y5pscy2imsnxv6s0fb0fvigjjdnknnd32wk9"))))
+    (build-system dune-build-system)
+    (arguments `(#:tests? #f))
+    (home-page
+      "https://gitlab.inria.fr/fpottier/fix")
+    (synopsis
+      "Facilities for memoization and fixed points")
+    (description #f)
+    (license #f)))
+
+(define-public ocaml-dune-build-info
+  (package
+    (name "ocaml-dune-build-info")
+    (version "2.7.1")
+    (source
+      (origin
+        (method url-fetch)
+        (uri "https://github.com/ocaml/dune/releases/download/2.7.1/dune-2.7.1.tbz")
+        (sha256
+          (base32
+            "0pcjf209gynjwipnpplaqyvyivnawqiwhvqnivhkybisicpqyln3"))))
+    (build-system dune-build-system)
+    (arguments `(#:tests? #f))
+    (propagated-inputs `(("ocaml-odoc" ,ocaml-odoc)))
+    (home-page "https://github.com/ocaml/dune")
+    (synopsis
+      "Embed build informations inside executable")
+    (description
+      "The build-info library allows to access information about how the
+executable was built, such as the version of the project at which it
+was built or the list of statically linked libraries with their
+versions.  It supports reporting the version from the version control
+system during development to get an precise reference of when the
+executable was built.
+")
+    (license #f)))
+
+(define-public ocamlformat
+  (package
+    (name "ocamlformat")
+    (version "0.17.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri "https://github.com/ocaml-ppx/ocamlformat/releases/download/0.17.0/ocamlformat-0.17.0.tbz")
+        (sha256
+          (base32
+            "0f1lxp697yq61z8gqxjjaqd2ns8fd1vjfggn55x0gh9dx098p138"))))
+    (build-system dune-build-system)
+    (arguments `(#:tests? #f))
+    (propagated-inputs
+      `(("ocaml-version" ,ocaml-version)
+        ("ocaml-base" ,ocaml-base)
+        ("ocaml-cmdliner" ,ocaml-cmdliner)
+        ("ocaml-dune-build-info" ,ocaml-dune-build-info)
+        ("ocaml-fix" ,ocaml-fix)
+        ("ocaml-fpath" ,ocaml-fpath)
+        ("ocaml-menhir" ,ocaml-menhir)
+        ("ocaml-menhirLib" ,ocaml-menhirLib)
+        ("ocaml-menhirSdk" ,ocaml-menhirSdk)
+        ("ocaml-odoc" ,ocaml-odoc)
+        ("ocaml-migrate-parsetree" ,ocaml-migrate-parsetree)
+        ("ocaml-ppxlib" ,ocaml-ppxlib)
+        ("ocaml-re" ,ocaml-re)
+        ("ocaml-stdio" ,ocaml-stdio)
+        ("ocaml-uuseg" ,ocaml-uuseg)
+        ("ocaml-uutf" ,ocaml-uutf)))
+    (native-inputs
+      `(("ocaml-alcotest" ,ocaml-alcotest)
+        ("ocaml-ocp-indent" ,ocaml-ocp-indent)
+        ("ocaml-bisect-ppx" ,ocaml-bisect-ppx)))
+    (home-page
+      "https://github.com/ocaml-ppx/ocamlformat")
+    (synopsis "Auto-formatter for OCaml code")
+    (description
+      "OCamlFormat is a tool to automatically format OCaml code in a uniform style.")
+    (license #f)))
 
 (define-public ocaml-spawn
   (package
@@ -1751,97 +2110,6 @@ the toplevel names Ocaml_common, Ocaml_bytecomp, Ocaml_optcomp, ...
 ")
     (license #f)))
 
-;; newer version of this needed by bin_prot or ppx_custom_printf
-(define-public ocaml-migrate-parsetree
-  (package
-    (name "ocaml-migrate-parsetree")
-    (version "2.1.0")
-    (source
-      (origin
-        (method url-fetch)
-        (uri "https://github.com/ocaml-ppx/ocaml-migrate-parsetree/releases/download/v2.1.0/ocaml-migrate-parsetree-v2.1.0.tbz")
-        (sha256
-          (base32
-            "07x7lm45kny0mi0fjvzw51445brm0dgy099cw0gpyly0wj77hyrq"))))
-    (build-system dune-build-system)
-    (arguments `(#:tests? #f))
-    (properties
-      `((upstream-name . "ocaml-migrate-parsetree")))
-    (home-page
-      "https://github.com/ocaml-ppx/ocaml-migrate-parsetree")
-    (synopsis
-      "Convert OCaml parsetrees between different versions")
-    (description
-      "Convert OCaml parsetrees between different versions
-
-This library converts parsetrees, outcometree and ast mappers between
-different OCaml versions.  High-level functions help making PPX
-rewriters independent of a compiler version.
-")
-    (license #f)))
-
-(define-public ocaml-ppxlib
-  (package
-    (name "ocaml-ppxlib")
-    (version "0.22.0")
-    (source
-      (origin
-        (method url-fetch)
-        (uri "https://github.com/ocaml-ppx/ppxlib/releases/download/0.22.0/ppxlib-0.22.0.tbz")
-        (sha256
-          (base32
-            "0ykdp55i6x1a5mbxjlvwcfvs4kvzxqnn2bi2lf224rk677h93sry"))))
-    (build-system dune-build-system)
-    (arguments
-     `(
-       ;; #:phases (modify-phases %standard-phases
-       ;;   (add-before 'check 'set-topfind
-       ;;     (lambda* (#:key inputs #:allow-other-keys)
-       ;;       ;; add the line #directory ".." at the top of each file
-       ;;       ;; using #use "topfind";; to be able to find topfind
-       ;;       (let* ((findlib-path (assoc-ref inputs "findlib"))
-       ;;              (findlib-libdir
-       ;;               (string-append findlib-path "/lib/ocaml/site-lib")))
-       ;;         (substitute* '("test/base/test.ml"
-       ;;                        "test/code_path/test.ml"
-       ;;                        "test/deriving/test.ml"
-       ;;                        "test/driver/attributes/test.ml"
-       ;;                        "test/driver/non-compressible-suffix/test.ml"
-       ;;                        "test/driver/transformations/test.ml")
-       ;;           (("#use \"topfind\";;" all)
-       ;;            (string-append "#directory \"" findlib-libdir "\"\n"
-       ;;                           all))))
-       ;;       #t)))
-       #:tests? #f))
-    (propagated-inputs
-      `(("ocaml-compiler-libs" ,ocaml-compiler-libs)
-        ("ocaml-migrate-parsetree"
-         ,ocaml-migrate-parsetree)
-        ("ocaml-ppx-derivers" ,ocaml-ppx-derivers)
-        ("ocaml-sexplib0" ,ocaml-sexplib0)
-        ("ocaml-stdlib-shims" ,ocaml-stdlib-shims)
-        ("ocaml-odoc" ,ocaml-odoc)))
-    (native-inputs
-      `(("ocaml-findlib" ,ocaml-findlib)
-        ("ocaml-re" ,ocaml-re)
-        ("ocaml-cinaps" ,ocaml-cinaps)
-        ("ocaml-base" ,ocaml-base)
-        ("ocaml-stdio" ,ocaml-stdio)))
-    (home-page "https://github.com/ocaml-ppx/ppxlib")
-    (synopsis "Standard library for ppx rewriters")
-    (description
-      "Ppxlib is the standard library for ppx rewriters and other programs
-that manipulate the in-memory reprensation of OCaml programs, a.k.a
-the \"Parsetree\".
-
-It also comes bundled with two ppx rewriters that are commonly used to
-write tools that manipulate and/or generate Parsetree values;
-`ppxlib.metaquot` which allows to construct Parsetree values using the
-OCaml syntax directly and `ppxlib.traverse` which provides various
-ways of automatically traversing values of a given type, in particular
-allowing to inject a complex structured value into generated code.
-")
-    (license #f)))
 
 (define-public ocaml-ppx-compare
   (package
