@@ -16,12 +16,82 @@
   #:use-module (gnu packages libffi) 
   #:use-module (gnu packages version-control)
   #:use-module (mygnu packages ocaml-extunix)
+  #:use-module ((guix licenses) #:prefix license:)
   #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages video)
   #:use-module (gnu packages xorg)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages gawk))
+
+(define dune2.8.5-bootstrap
+  (package
+    (name "dune2.8.5")
+    (version "2.8.5")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/ocaml/dune")
+                     (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0a1jj6njzsfjgklsirs6a79079wg4jhy6n888vg3dgp44awwq5jn"))))
+    (build-system ocaml-build-system)
+    (arguments
+     `(#:tests? #f; require odoc
+       #:make-flags (list "release"
+                          (string-append "PREFIX=" (assoc-ref %outputs "out"))
+                          (string-append "LIBDIR=" (assoc-ref %outputs "out")
+                                         "/lib/ocaml/site-lib"))
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'configure
+           (lambda* (#:key outputs #:allow-other-keys)
+             (mkdir-p "src/dune")
+             (invoke "./configure")
+             #t)))))
+    (home-page "https://github.com/ocaml/dune")
+    (synopsis "OCaml build system")
+    (description "Dune is a build system that was designed to simplify the
+release of Jane Street packages.  It reads metadata from @file{dune} files
+following a very simple s-expression syntax.")
+    (license license:expat)))
+
+(define-public dune2.8.5-configurator
+  (package
+    (inherit dune2.8.5-bootstrap)
+    (name "dune2.8.5-configurator")
+    (build-system dune-build-system)
+    (arguments
+     `(#:package "dune-configurator"
+       #:dune ,dune2.8.5-bootstrap
+       ; require ppx_expect
+       #:tests? #f))
+    (propagated-inputs
+     `(("ocaml-csexp" ,ocaml-csexp)))
+    ;; (properties `((ocaml4.09-variant . ,(delay ocaml4.09-dune-configurator))))
+    (synopsis "Dune helper library for gathering system configuration")
+    (description "Dune-configurator is a small library that helps writing
+OCaml scripts that test features available on the system, in order to generate
+config.h files for instance.  Among other things, dune-configurator allows one to:
+
+@itemize
+@item test if a C program compiles
+@item query pkg-config
+@item import #define from OCaml header files
+@item generate config.h file
+@end itemize")))
+
+(define-public dune2.8.5
+  (package
+    (inherit dune2.8.5-bootstrap)
+    (propagated-inputs
+     `(("dune-configurator" ,dune2.8.5-configurator)))
+    ;; (properties `((ocaml4.07-variant . ,(delay ocaml4.07-dune))
+    ;;               (ocaml4.09-variant . ,(delay ocaml4.09-dune))))
+    ))
+
 
 ;; newer version of this needed by bin_prot or ppx_custom_printf
 (define-public ocaml-migrate-parsetree
