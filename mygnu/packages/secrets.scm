@@ -8,18 +8,34 @@
   #:use-module (guix build-system copy)
   #:use-module (guix build-system cmake)
   #:use-module (guix licenses)
+  #:use-module (gnu packages xml)
   #:use-module (gnu packages)
+  #:use-module (gnu packages bison)
   #:use-module (gnu packages base)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages llvm)
   #:use-module (gnu packages ocaml)
+  #:use-module (gnu packages sdl)
+  #:use-module (gnu packages gl)
   #:use-module (gnu packages crypto)
   #:use-module (gnu packages libffi) 
+  #:use-module (gnu packages freedesktop)
+  #:use-module (gnu packages python)
+  #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages version-control)
+  #:use-module (gnu packages flex)
   #:use-module (mygnu packages ocaml-extunix)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (gnu packages xdisorg)
+  #:use-module (gnu packages elf)
   #:use-module (gnu packages video)
+  #:use-module (guix utils)
   #:use-module (gnu packages xorg)
+  #:use-module (gnu packages gettext)
+  #:use-module (gnu packages vulkan)
+  #:use-module ((srfi srfi-1) #:hide (zip))
+  #:use-module (ice-9 match)
+  #:use-module (guix build-system meson)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages gawk))
@@ -1682,10 +1698,40 @@ movements on ANSI terminals. It also works on the windows shell (but
 this part is currently work in progress).")
     (license #f)))
 
+(define-public ocaml-integers
+  (package
+    (name "ocaml-integers")
+    (version "0.3.0")
+    (home-page "https://github.com/ocamllabs/ocaml-integers")
+   (source (origin
+             (method git-fetch)
+             (uri (git-reference
+                    (url home-page)
+                    (commit version)))
+             (file-name (git-file-name name version))
+             (sha256
+              (base32
+               "1yhif5zh4srh63mhimfx3p5ljpb3lixjdd3i9pjnbj2qgpzlqj8p"))))
+    (build-system dune-build-system)
+    (arguments
+     `(#:tests? #f; no tests
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'build
+           ;; make warnings non fatal (jbuilder behaviour)
+           (lambda _
+             (invoke "dune" "build" "@install" "--profile=release"))))
+       ))
+    (synopsis "Various signed and unsigned integer types for OCaml")
+    (description "The ocaml-integers library provides a number of 8-, 16-, 32-
+and 64-bit signed and unsigned integer types, together with aliases such as
+long and size_t whose sizes depend on the host platform.")
+    (license license:expat)))
+
 (define-public ocaml-ctypes
   (package
    (name "ocaml-ctypes")
-   (version "0.14.0")
+   (version "0.18.0")
    (home-page "https://github.com/ocamllabs/ocaml-ctypes")
    (source (origin
              (method git-fetch)
@@ -1695,7 +1741,7 @@ this part is currently work in progress).")
              (file-name (git-file-name name version))
              (sha256
               (base32
-               "1b2q3h63ngf4x9qp65qwapf2dg9q0mcdah6qjm2q0c7v2p5vysv9"))))
+               "03zrbnl16m67ls0yfhq7a4k4238x6x6b3m456g4dw2yqwc153vks"))))
    (build-system ocaml-build-system)
    (arguments
     `(#:tests? #f; require an old lwt
@@ -1711,6 +1757,11 @@ this part is currently work in progress).")
                   (chmod file (+ #o200 (stat:mode stat)))))
               (find-files "." "."))
             #t))
+	(add-before 'build 'set-patch-makefile
+		    (lambda* (#:key outputs #:allow-other-keys)
+		      ;; Add ocaml-integers include path
+		      (substitute* "Makefile.rules" (("# see GPR#1535") (string-append "-L " (assoc-ref outputs "out") "/lib/ocaml/site-lib/stublibs")))
+		      #t))
 	(add-after 'install 'link-stubs
          (lambda* (#:key outputs #:allow-other-keys)
            (let* ((out (assoc-ref outputs "out"))
@@ -1719,17 +1770,19 @@ this part is currently work in progress).")
              (mkdir-p stubs)
              (symlink (string-append lib "/dllctypes_stubs.so")
                       (string-append stubs "/dllctypes_stubs.so"))
+             ;; (symlink (string-append lib "/dllctypes_stubs.so")
+             ;;          (string-append stubs "/dllctypes_stubs.so"))
              #t)))
         (delete 'configure))))
    (native-inputs
     `(("pkg-config" ,pkg-config)))
+   (propagated-inputs 
+    `(("bigarray-compat" ,ocaml-bigarray-compat)
+      ("integers" ,ocaml-integers)
+    ))
    (inputs
     `(("libffi" ,libffi)
-      ("ounit" ,ocaml-ounit)
-      ("integers" ,ocaml-integers)
-      ("lwt" ,ocaml-lwt)
-      ("topkg" ,ocaml-topkg)
-      ("opam" ,opam)))
+            ))
    (synopsis "Library for binding to C libraries using pure OCaml")
    (description "Ctypes is a library for binding to C libraries using pure
 OCaml.  The primary aim is to make writing C extensions as straightforward as
@@ -1739,6 +1792,359 @@ functions.  You can use these combinators to describe the types of the
 functions that you want to call, then bind directly to those functions -- all
 without writing or generating any C!")
    (license #f)))
+
+
+;; ;;; Mesa needs LibVA headers to build its Gallium-based VA API implementation;
+;; ;;; LibVA itself depends on Mesa.  We use the following to solve the circular
+;; ;;; dependency.
+;; (define libva-without-mesa
+;;   ;; Delay to work around circular import problem.
+;;   (delay
+;;     (package
+;;       (inherit libva)
+;;       (name "libva-without-mesa")
+;;       (inputs `(,@(fold alist-delete (package-inputs libva)
+;;                         '("mesa" "wayland"))))
+;;       (arguments
+;;        (strip-keyword-arguments
+;;         '(#:make-flags)
+;;         (substitute-keyword-arguments (package-arguments libva)
+;;           ((#:configure-flags flags)
+;;            '(list "--disable-glx" "--disable-egl"))))))))
+
+;; (define-public mesa
+;;   (package
+;;     (name "mesa")
+;;     (version "20.0.7")
+
+;;     ;; Mesa 20.0.5 through 20.0.7 has problems with some graphic drivers, so
+;;     ;; we need this newer version.
+;;     ;; https://gitlab.freedesktop.org/mesa/mesa/-/issues/2882
+;;     ;; https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/4861
+;;     (replacement mesa-20.0.8)
+
+;;     (source
+;;       (origin
+;;         (method url-fetch)
+;;         (uri (list (string-append "https://mesa.freedesktop.org/archive/"
+;;                                   "mesa-" version ".tar.xz")
+;;                    (string-append "ftp://ftp.freedesktop.org/pub/mesa/"
+;;                                   "mesa-" version ".tar.xz")
+;;                    (string-append "ftp://ftp.freedesktop.org/pub/mesa/"
+;;                                   version "/mesa-" version ".tar.xz")))
+;;         (sha256
+;;          (base32
+;;           "0y517qpdg6v6dsdgzb365p03m30511sbyh8pq0mcvhvjwy7javpy"))
+
+;;        (patches 
+;; 	(parameterize
+;; 	    ((%patch-path
+;; 	      (map (lambda (directory)
+;; 		     (string-append directory "/mygnu/packages/patches"))
+;; 		   %load-path)))
+
+;; 	  (search-patches "mesa-skip-disk-cache-test.patch")))
+;;         ))
+;;     (build-system meson-build-system)
+;;     (propagated-inputs
+;;       `(;; The following are in the Requires.private field of gl.pc.
+;;         ("libdrm" ,libdrm)
+;;         ("libvdpau" ,libvdpau)
+;;         ("libx11" ,libx11)
+;;         ("libxdamage" ,libxdamage)
+;;         ("libxfixes" ,libxfixes)
+;;         ("libxshmfence" ,libxshmfence)
+;;         ("libxxf86vm" ,libxxf86vm)
+;;         ("xorgproto" ,xorgproto)))
+;;     (inputs
+;;       `(("expat" ,expat)
+;;         ("libelf" ,elfutils)  ;required for r600 when using llvm
+;;         ("libva" ,(force libva-without-mesa))
+;;         ("libxml2" ,libxml2)
+;;         ;; TODO: Add 'libxml2-python' for OpenGL ES 1.1 and 2.0 support
+;;         ("libxrandr" ,libxrandr)
+;;         ("libxvmc" ,libxvmc)
+;;         ,@(match (%current-system)
+;;             ((or "x86_64-linux" "i686-linux")
+;;              ;; Note: update the 'clang' input of mesa-opencl when bumping this.
+;;              `(("llvm" ,llvm-10)))
+;;             (_
+;;              `()))
+;;         ("wayland" ,wayland)
+;;         ("wayland-protocols" ,wayland-protocols)))
+;;     (native-inputs
+;;       `(("bison" ,bison)
+;;         ("flex" ,flex)
+;;         ("gettext" ,gettext-minimal)
+;;         ,@(match (%current-system)
+;;             ((or "x86_64-linux" "i686-linux")
+;;              `(("glslang" ,glslang)))
+;;             (_
+;;              `()))
+;;         ("pkg-config" ,pkg-config)
+;;         ("python" ,python-wrapper)
+;;         ("python-mako" ,python-mako)
+;;         ("which" ,(@ (gnu packages base) which))))
+;;     (outputs '("out" "bin"))
+;;     (arguments
+;;      `(#:configure-flags
+;;        '(,@(match (%current-system)
+;;              ((or "armhf-linux" "aarch64-linux")
+;;               ;; TODO: Fix svga driver for aarch64 and armhf.
+;;               '("-Dgallium-drivers=etnaviv,freedreno,kmsro,lima,nouveau,panfrost,r300,r600,swrast,tegra,v3d,vc4,virgl"))
+;;              (_
+;;               '("-Dgallium-drivers=iris,nouveau,r300,r600,radeonsi,svga,swrast,virgl")))
+;;          ;; Enable various optional features.  TODO: opencl requires libclc,
+;;          ;; omx requires libomxil-bellagio
+;;          "-Dplatforms=x11,drm,surfaceless,wayland"
+;;          "-Dglx=dri"        ;Thread Local Storage, improves performance
+;;          ;; "-Dopencl=true"
+;;          ;; "-Domx=true"
+;;          "-Dosmesa=gallium"
+;;          "-Dgallium-xa=true"
+
+;;          ;; features required by wayland
+;;          "-Dgles2=true"
+;;          "-Dgles3=true"
+;;          "-Dgbm=true"
+;;          "-Dshared-glapi=true"
+
+;;          ;; Enable Vulkan on i686-linux and x86-64-linux.
+;;          ,@(match (%current-system)
+;;              ((or "i686-linux" "x86_64-linux")
+;;               '("-Dvulkan-drivers=intel,amd"))
+;;              (_
+;;               '("-Dvulkan-drivers=auto")))
+
+;;          ;; Enable the Vulkan overlay layer on i686-linux and x86-64-linux.
+;;          ,@(match (%current-system)
+;;              ((or "x86_64-linux" "i686-linux")
+;;               '("-Dvulkan-overlay-layer=true"))
+;;              (_
+;;               '()))
+
+;;          ;; Also enable the tests.
+;;          "-Dbuild-tests=true"
+
+;;          ;; on non-intel systems, drop i915 and i965
+;;          ;; from the default dri drivers
+;;          ,@(match (%current-system)
+;;              ((or "x86_64-linux" "i686-linux")
+;;               '("-Ddri-drivers=i915,i965,nouveau,r200,r100"
+;;                 "-Dllvm=true"))         ; default is x86/x86_64 only
+;;              (_
+;;               '("-Ddri-drivers=nouveau,r200,r100"))))
+
+;;        ;; XXX: 'debugoptimized' causes LTO link failures on some drivers.  The
+;;        ;; documentation recommends using 'release' for performance anyway.
+;;        #:build-type "release"
+
+;;        #:modules ((ice-9 match)
+;;                   (srfi srfi-1)
+;;                   (guix build utils)
+;;                   (guix build meson-build-system))
+;;        #:phases
+;;        (modify-phases %standard-phases
+;;          ,@(if (string-prefix? "i686" (or (%current-target-system)
+;;                                           (%current-system)))
+;;                ;; Disable new test from Mesa 19 that fails on i686.  Upstream
+;;                ;; report: <https://bugs.freedesktop.org/show_bug.cgi?id=110612>.
+;;                `((add-after 'unpack 'disable-failing-test
+;;                    (lambda _
+;;                      (substitute* "src/util/tests/format/meson.build"
+;;                        (("'u_format_test',") ""))
+;;                      #t)))
+;;                '())
+;;          (add-before 'configure 'fix-dlopen-libnames
+;;            (lambda* (#:key inputs outputs #:allow-other-keys)
+;;              (let ((out (assoc-ref outputs "out")))
+;;                ;; Remain agnostic to .so.X.Y.Z versions while doing
+;;                ;; the substitutions so we're future-safe.
+;;                (substitute* "src/glx/meson.build"
+;;                  (("-DGL_LIB_NAME=\"lib@0@\\.so\\.@1@\"")
+;;                   (string-append "-DGL_LIB_NAME=\"" out
+;;                                  "/lib/lib@0@.so.@1@\"")))
+;;                (substitute* "src/gbm/backends/dri/gbm_dri.c"
+;;                  (("\"libglapi\\.so")
+;;                   (string-append "\"" out "/lib/libglapi.so")))
+;;                (substitute* "src/gbm/main/backend.c"
+;;                  ;; No need to patch the gbm_gallium_drm.so reference;
+;;                  ;; it's never installed since Mesa removed its
+;;                  ;; egl_gallium support.
+;;                  (("\"gbm_dri\\.so")
+;;                   (string-append "\"" out "/lib/dri/gbm_dri.so")))
+;;                #t)))
+;;          (add-after 'install 'split-outputs
+;;            (lambda* (#:key outputs #:allow-other-keys)
+;;              (let ((out (assoc-ref outputs "out"))
+;;                    (bin (assoc-ref outputs "bin")))
+;;                ,@(match (%current-system)
+;;                    ((or "i686-linux" "x86_64-linux")
+;;                     ;; Install the Vulkan overlay control script to a separate
+;;                     ;; output to prevent a reference on Python, saving ~70 MiB
+;;                     ;; on the closure size.
+;;                     '((copy-recursively (string-append out "/bin")
+;;                                         (string-append bin "/bin"))
+;;                       (delete-file-recursively (string-append out "/bin"))))
+;;                    (_
+;;                     ;; XXX: On architectures without the Vulkan overlay layer
+;;                     ;; just create an empty file because outputs can not be
+;;                     ;; added conditionally.
+;;                     '((mkdir-p (string-append bin "/bin"))
+;;                       (call-with-output-file (string-append bin "/bin/.empty")
+;;                         (const #t)))))
+;;                #t)))
+;;          (add-after 'install 'symlinks-instead-of-hard-links
+;;            (lambda* (#:key outputs #:allow-other-keys)
+;;              ;; All the drivers and gallium targets create hard links upon
+;;              ;; installation (search for "hardlink each megadriver instance"
+;;              ;; in the makefiles).  This is no good for us since we'd produce
+;;              ;; nars that contain several copies of these files.  Thus, turn
+;;              ;; them into symlinks, which saves ~124 MiB.
+;;              (let* ((out    (assoc-ref outputs "out"))
+;;                     (lib    (string-append out "/lib"))
+;;                     (files  (find-files lib
+;;                                         (lambda (file stat)
+;;                                           (and (string-contains file ".so")
+;;                                                (eq? 'regular
+;;                                                     (stat:type stat))))))
+;;                     (inodes (map (compose stat:ino stat) files)))
+;;                (for-each (lambda (inode)
+;;                            (match (filter-map (match-lambda
+;;                                                 ((file ino)
+;;                                                  (and (= ino inode) file)))
+;;                                               (zip files inodes))
+;;                              ((_)
+;;                               #f)
+;;                              ((reference others ..1)
+;;                               (format #t "creating ~a symlinks to '~a'~%"
+;;                                       (length others) reference)
+;;                               (for-each delete-file others)
+;;                               (for-each (lambda (file)
+;;                                           (if (string=? (dirname file)
+;;                                                         (dirname reference))
+;;                                               (symlink (basename reference)
+;;                                                        file)
+;;                                               (symlink reference file)))
+;;                                         others))))
+;;                          (delete-duplicates inodes))
+;;                #t))))))
+;;     (home-page "https://mesa3d.org/")
+;;     (synopsis "OpenGL and Vulkan implementations")
+;;     (description "Mesa is a free implementation of the OpenGL and Vulkan
+;; specifications - systems for rendering interactive 3D graphics.  A variety of
+;; device drivers allows Mesa to be used in many different environments ranging
+;; from software emulation to complete hardware acceleration for modern GPUs.")
+;;     (license license:x11)))
+
+
+;; (define mesa-20.0.8
+;;   (package
+;;     (inherit mesa)
+;;     (version "20.0.8")
+;;     (source (origin
+;;               (inherit (package-source mesa))
+;;               (uri (list (string-append "https://mesa.freedesktop.org/archive/"
+;;                                         "mesa-" version ".tar.xz")
+;;                          (string-append "ftp://ftp.freedesktop.org/pub/mesa/"
+;;                                         "mesa-" version ".tar.xz")))
+;;               (sha256
+;;                (base32
+;;                 "0v0bfh3ay07s6msxmklvwfaif0q02kq2yhy65fdhys49vw8c1w3c"))))))
+
+
+(define-public ocaml-tgls
+  (package
+   (name "ocaml-tgls")
+   (version "0.8.5")
+   (source
+    (origin
+     (method url-fetch)
+     (uri "http://erratique.ch/software/tgls/releases/tgls-0.8.5.tbz")
+     (sha256
+      (base32
+       "0xdc8j3grir91mbwigz9jhjgnlhy5g0sm9wdcsh3ih3fzzkjrdd3"))))
+   (build-system ocaml-build-system)
+   (arguments
+    `(#:build-flags '("build")
+      #:tests? #f; tests require a display device
+      #:phases
+      (modify-phases %standard-phases
+        (delete 'configure)
+        (add-before 'build 'set-path
+          (lambda* (#:key inputs #:allow-other-keys)
+            (substitute* "myocamlbuild.ml" (("glesv3") "glesv2"))
+            #t))
+        )))
+   (propagated-inputs
+    `(("ocaml-ctypes" ,ocaml-ctypes)))
+   (native-inputs
+    `(("ocaml-findlib" ,ocaml-findlib)
+      ("ocamlbuild" ,ocamlbuild)
+      ("opam" ,opam)
+      ("mesa" ,mesa)
+      ("pkg-config" ,pkg-config)
+      ("ocaml-topkg" ,ocaml-topkg)
+      ("ocaml-tsdl" ,ocaml-tsdl)
+      ("ocaml-result" ,ocaml-result)))
+   (home-page "http://erratique.ch/software/tgls")
+   (synopsis
+    "Thin bindings to OpenGL {3,4} and OpenGL ES {2,3} for OCaml")
+   (description
+    "Tgls is a set of independent OCaml libraries providing thin bindings
+to OpenGL libraries. It has support for core OpenGL 3.{2,3} and
+4.{0,1,2,3,4} and OpenGL ES 2 and 3.{0,1,2}.
+
+Tgls depends on [ocaml-ctypes][ctypes] and the C OpenGL library of your
+platform. It is distributed under the ISC license.
+
+[ctypes]: https://github.com/ocamllabs/ocaml-ctypes")
+   (license license:isc)))
+
+
+(define-public ocaml-tsdl
+  (package
+    (name "ocaml-tsdl")
+    (version "0.9.7")
+    (home-page "https://erratique.ch/software/tsdl")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append home-page "/releases/tsdl-"
+                                  version ".tbz"))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1zwv0ixkigh1gzk5n49rwvz2f2m62jdkkqg40j7dclg4gri7691f"))))
+    (build-system ocaml-build-system)
+    (arguments
+     `(#:build-flags '("build")
+       #:tests? #f; tests require a display device
+       #:phases
+       (modify-phases
+	%standard-phases
+	(delete 'configure)
+	;; (add-before 'build 'set-patch-makefile
+	;; 	    (lambda* (#:key inputs #:allow-other-keys)
+	;; 	      ;; Add ocaml-integers include path
+	;; 	      (substitute* "myocamlbuild.ml" (("@ libs_L") (string-append "@ libs_L @ [A \"-L\"; A \"" (assoc-ref inputs "ocaml-integers") "/lib/ocaml/site-lib/integers\"; A \"-L\"; A \"" (assoc-ref inputs "ocaml-ctypes") "/lib/ocaml/site-lib/ctypes\"]")))
+	;; 	      #t))
+
+	)))
+    (native-inputs
+     `(("ocamlbuild" ,ocamlbuild)
+       ("ocaml-astring" ,ocaml-astring)
+       ("opam" ,opam)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("topkg" ,ocaml-topkg)
+       ("sdl2" ,sdl2)
+       ("mesa" ,mesa)
+       ("ocaml-integers" ,ocaml-integers)
+       ("ocaml-ctypes" ,ocaml-ctypes)))
+    (synopsis "Thin bindings to SDL for OCaml")
+    (description "Tsdl is an OCaml library providing thin bindings to the
+cross-platform SDL C library.")
+    (license license:isc)))
 
 (define-public ocaml-sodium
   (package
