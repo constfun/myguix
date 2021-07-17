@@ -1698,100 +1698,100 @@ movements on ANSI terminals. It also works on the windows shell (but
 this part is currently work in progress).")
     (license #f)))
 
-(define-public ocaml-integers
-  (package
-    (name "ocaml-integers")
-    (version "0.3.0")
-    (home-page "https://github.com/ocamllabs/ocaml-integers")
-   (source (origin
-             (method git-fetch)
-             (uri (git-reference
-                    (url home-page)
-                    (commit version)))
-             (file-name (git-file-name name version))
-             (sha256
-              (base32
-               "1yhif5zh4srh63mhimfx3p5ljpb3lixjdd3i9pjnbj2qgpzlqj8p"))))
-    (build-system dune-build-system)
-    (arguments
-     `(#:tests? #f; no tests
-       #:phases
-       (modify-phases %standard-phases
-         (replace 'build
-           ;; make warnings non fatal (jbuilder behaviour)
-           (lambda _
-             (invoke "dune" "build" "@install" "--profile=release"))))
-       ))
-    (synopsis "Various signed and unsigned integer types for OCaml")
-    (description "The ocaml-integers library provides a number of 8-, 16-, 32-
-and 64-bit signed and unsigned integer types, together with aliases such as
-long and size_t whose sizes depend on the host platform.")
-    (license license:expat)))
+;; (define-public ocaml-integers
+;;   (package
+;;     (name "ocaml-integers")
+;;     (version "0.3.0")
+;;     (home-page "https://github.com/ocamllabs/ocaml-integers")
+;;    (source (origin
+;;              (method git-fetch)
+;;              (uri (git-reference
+;;                     (url home-page)
+;;                     (commit version)))
+;;              (file-name (git-file-name name version))
+;;              (sha256
+;;               (base32
+;;                "1yhif5zh4srh63mhimfx3p5ljpb3lixjdd3i9pjnbj2qgpzlqj8p"))))
+;;     (build-system dune-build-system)
+;;     (arguments
+;;      `(#:tests? #f; no tests
+;;        #:phases
+;;        (modify-phases %standard-phases
+;;          (replace 'build
+;;            ;; make warnings non fatal (jbuilder behaviour)
+;;            (lambda _
+;;              (invoke "dune" "build" "@install" "--profile=release"))))
+;;        ))
+;;     (synopsis "Various signed and unsigned integer types for OCaml")
+;;     (description "The ocaml-integers library provides a number of 8-, 16-, 32-
+;; and 64-bit signed and unsigned integer types, together with aliases such as
+;; long and size_t whose sizes depend on the host platform.")
+;;     (license license:expat)))
 
-(define-public ocaml-ctypes
-  (package
-   (name "ocaml-ctypes")
-   (version "0.18.0")
-   (home-page "https://github.com/ocamllabs/ocaml-ctypes")
-   (source (origin
-             (method git-fetch)
-             (uri (git-reference
-                    (url home-page)
-                    (commit version)))
-             (file-name (git-file-name name version))
-             (sha256
-              (base32
-               "03zrbnl16m67ls0yfhq7a4k4238x6x6b3m456g4dw2yqwc153vks"))))
-   (build-system ocaml-build-system)
-   (arguments
-    `(#:tests? #f; require an old lwt
-      #:make-flags
-      (list (string-append "INSTALL_HEADERS = $(wildcard $($(PROJECT).dir)/*.h)"))
-      #:phases
-      (modify-phases %standard-phases
-        (add-after 'unpack 'make-writable
-          (lambda _
-            (for-each
-              (lambda (file)
-                (let ((stat (stat file)))
-                  (chmod file (+ #o200 (stat:mode stat)))))
-              (find-files "." "."))
-            #t))
-	(add-before 'build 'set-patch-makefile
-		    (lambda* (#:key outputs #:allow-other-keys)
-		      ;; Add ocaml-integers include path
-		      (substitute* "Makefile.rules" (("# see GPR#1535") (string-append "-L " (assoc-ref outputs "out") "/lib/ocaml/site-lib/stublibs")))
-		      #t))
-	(add-after 'install 'link-stubs
-         (lambda* (#:key outputs #:allow-other-keys)
-           (let* ((out (assoc-ref outputs "out"))
-                  (stubs (string-append out "/lib/ocaml/site-lib/stubslibs"))
-                  (lib (string-append out "/lib/ocaml/site-lib/ctypes")))
-             (mkdir-p stubs)
-             (symlink (string-append lib "/dllctypes_stubs.so")
-                      (string-append stubs "/dllctypes_stubs.so"))
-             ;; (symlink (string-append lib "/dllctypes_stubs.so")
-             ;;          (string-append stubs "/dllctypes_stubs.so"))
-             #t)))
-        (delete 'configure))))
-   (native-inputs
-    `(("pkg-config" ,pkg-config)))
-   (propagated-inputs 
-    `(("bigarray-compat" ,ocaml-bigarray-compat)
-      ("integers" ,ocaml-integers)
-    ))
-   (inputs
-    `(("libffi" ,libffi)
-            ))
-   (synopsis "Library for binding to C libraries using pure OCaml")
-   (description "Ctypes is a library for binding to C libraries using pure
-OCaml.  The primary aim is to make writing C extensions as straightforward as
-possible.  The core of ctypes is a set of combinators for describing the
-structure of C types -- numeric types, arrays, pointers, structs, unions and
-functions.  You can use these combinators to describe the types of the
-functions that you want to call, then bind directly to those functions -- all
-without writing or generating any C!")
-   (license #f)))
+;; (define-public ocaml-ctypes
+;;   (package
+;;    (name "ocaml-ctypes")
+;;    (version "0.18.0")
+;;    (home-page "https://github.com/ocamllabs/ocaml-ctypes")
+;;    (source (origin
+;;              (method git-fetch)
+;;              (uri (git-reference
+;;                     (url home-page)
+;;                     (commit version)))
+;;              (file-name (git-file-name name version))
+;;              (sha256
+;;               (base32
+;;                "03zrbnl16m67ls0yfhq7a4k4238x6x6b3m456g4dw2yqwc153vks"))))
+;;    (build-system ocaml-build-system)
+;;    (arguments
+;;     `(#:tests? #f; require an old lwt
+;;       #:make-flags
+;;       (list (string-append "INSTALL_HEADERS = $(wildcard $($(PROJECT).dir)/*.h)"))
+;;       #:phases
+;;       (modify-phases %standard-phases
+;;         (add-after 'unpack 'make-writable
+;;           (lambda _
+;;             (for-each
+;;               (lambda (file)
+;;                 (let ((stat (stat file)))
+;;                   (chmod file (+ #o200 (stat:mode stat)))))
+;;               (find-files "." "."))
+;;             #t))
+;; 	(add-before 'build 'set-patch-makefile
+;; 		    (lambda* (#:key outputs #:allow-other-keys)
+;; 		      ;; Add ocaml-integers include path
+;; 		      (substitute* "Makefile.rules" (("# see GPR#1535") (string-append "-L " (assoc-ref outputs "out") "/lib/ocaml/site-lib/stublibs")))
+;; 		      #t))
+;; 	(add-after 'install 'link-stubs
+;;          (lambda* (#:key outputs #:allow-other-keys)
+;;            (let* ((out (assoc-ref outputs "out"))
+;;                   (stubs (string-append out "/lib/ocaml/site-lib/stubslibs"))
+;;                   (lib (string-append out "/lib/ocaml/site-lib/ctypes")))
+;;              (mkdir-p stubs)
+;;              (symlink (string-append lib "/dllctypes_stubs.so")
+;;                       (string-append stubs "/dllctypes_stubs.so"))
+;;              ;; (symlink (string-append lib "/dllctypes_stubs.so")
+;;              ;;          (string-append stubs "/dllctypes_stubs.so"))
+;;              #t)))
+;;         (delete 'configure))))
+;;    (native-inputs
+;;     `(("pkg-config" ,pkg-config)))
+;;    (propagated-inputs 
+;;     `(("bigarray-compat" ,ocaml-bigarray-compat)
+;;       ("integers" ,ocaml-integers)
+;;     ))
+;;    (inputs
+;;     `(("libffi" ,libffi)
+;;             ))
+;;    (synopsis "Library for binding to C libraries using pure OCaml")
+;;    (description "Ctypes is a library for binding to C libraries using pure
+;; OCaml.  The primary aim is to make writing C extensions as straightforward as
+;; possible.  The core of ctypes is a set of combinators for describing the
+;; structure of C types -- numeric types, arrays, pointers, structs, unions and
+;; functions.  You can use these combinators to describe the types of the
+;; functions that you want to call, then bind directly to those functions -- all
+;; without writing or generating any C!")
+;;    (license #f)))
 
 
 ;; ;;; Mesa needs LibVA headers to build its Gallium-based VA API implementation;
@@ -2077,7 +2077,9 @@ without writing or generating any C!")
             #t))
         )))
    (propagated-inputs
-    `(("ocaml-ctypes" ,ocaml-ctypes)))
+    `(
+      ("ocaml-integers" ,ocaml-integers)
+      ("ocaml-ctypes" ,ocaml-ctypes)))
    (native-inputs
     `(("ocaml-findlib" ,ocaml-findlib)
       ("ocamlbuild" ,ocamlbuild)
@@ -2102,110 +2104,171 @@ platform. It is distributed under the ISC license.
    (license license:isc)))
 
 
-(define-public ocaml-tsdl
-  (package
-    (name "ocaml-tsdl")
-    (version "0.9.7")
-    (home-page "https://erratique.ch/software/tsdl")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append home-page "/releases/tsdl-"
-                                  version ".tbz"))
-              (file-name (string-append name "-" version ".tar.gz"))
-              (sha256
-               (base32
-                "1zwv0ixkigh1gzk5n49rwvz2f2m62jdkkqg40j7dclg4gri7691f"))))
-    (build-system ocaml-build-system)
-    (arguments
-     `(#:build-flags '("build")
-       #:tests? #f; tests require a display device
-       #:phases
-       (modify-phases
-	%standard-phases
-	(delete 'configure)
-	;; (add-before 'build 'set-patch-makefile
-	;; 	    (lambda* (#:key inputs #:allow-other-keys)
-	;; 	      ;; Add ocaml-integers include path
-	;; 	      (substitute* "myocamlbuild.ml" (("@ libs_L") (string-append "@ libs_L @ [A \"-L\"; A \"" (assoc-ref inputs "ocaml-integers") "/lib/ocaml/site-lib/integers\"; A \"-L\"; A \"" (assoc-ref inputs "ocaml-ctypes") "/lib/ocaml/site-lib/ctypes\"]")))
-	;; 	      #t))
+;; (define-public ocaml-tsdl
+;;   (package
+;;     (name "ocaml-tsdl")
+;;     (version "0.9.7")
+;;     (home-page "https://erratique.ch/software/tsdl")
+;;     (source (origin
+;;               (method url-fetch)
+;;               (uri (string-append home-page "/releases/tsdl-"
+;;                                   version ".tbz"))
+;;               (file-name (string-append name "-" version ".tar.gz"))
+;;               (sha256
+;;                (base32
+;;                 "1zwv0ixkigh1gzk5n49rwvz2f2m62jdkkqg40j7dclg4gri7691f"))))
+;;     (build-system ocaml-build-system)
+;;     (arguments
+;;      `(#:build-flags '("build")
+;;        #:tests? #f; tests require a display device
+;;        #:phases
+;;        (modify-phases
+;; 	%standard-phases
+;; 	(delete 'configure)
+;; 	;; (add-before 'build 'set-patch-makefile
+;; 	;; 	    (lambda* (#:key inputs #:allow-other-keys)
+;; 	;; 	      ;; Add ocaml-integers include path
+;; 	;; 	      (substitute* "myocamlbuild.ml" (("@ libs_L") (string-append "@ libs_L @ [A \"-L\"; A \"" (assoc-ref inputs "ocaml-integers") "/lib/ocaml/site-lib/integers\"; A \"-L\"; A \"" (assoc-ref inputs "ocaml-ctypes") "/lib/ocaml/site-lib/ctypes\"]")))
+;; 	;; 	      #t))
 
-	)))
-    (native-inputs
-     `(("ocamlbuild" ,ocamlbuild)
-       ("ocaml-astring" ,ocaml-astring)
-       ("opam" ,opam)
-       ("pkg-config" ,pkg-config)))
-    (inputs
-     `(("topkg" ,ocaml-topkg)
-       ("sdl2" ,sdl2)
-       ("mesa" ,mesa)
-       ("ocaml-integers" ,ocaml-integers)
-       ("ocaml-ctypes" ,ocaml-ctypes)))
-    (synopsis "Thin bindings to SDL for OCaml")
-    (description "Tsdl is an OCaml library providing thin bindings to the
-cross-platform SDL C library.")
-    (license license:isc)))
+;; 	)))
+;;     (native-inputs
+;;      `(("ocamlbuild" ,ocamlbuild)
+;;        ("ocaml-astring" ,ocaml-astring)
+;;        ("opam" ,opam)
+;;        ("pkg-config" ,pkg-config)))
+;;     (inputs
+;;      `(("topkg" ,ocaml-topkg)
+;;        ("sdl2" ,sdl2)
+;;        ("mesa" ,mesa)
+;;        ("ocaml-integers" ,ocaml-integers)
+;;        ("ocaml-ctypes" ,ocaml-ctypes)))
+;;     (synopsis "Thin bindings to SDL for OCaml")
+;;     (description "Tsdl is an OCaml library providing thin bindings to the
+;; cross-platform SDL C library.")
+;;     (license license:isc)))
 
-(define-public ocaml-sodium
-  (package
-    (name "ocaml-sodium")
-    (version "0.6.0")
-    (source
-     (origin
-       (method url-fetch)
-       (uri "https://github.com/dsheets/ocaml-sodium/archive/0.6.0.tar.gz")
-       (sha256
-	(base32
-	 "0gilc2mg0kf4rag95cl507rajcasdpnff8idv8cf58c1b90lvqbf"))))
-    (build-system ocaml-build-system)
-    (arguments
-     `(
-       #:phases
-       (modify-phases %standard-phases
-	 (delete 'configure)
-	 (add-after 'install 'link-stubs
-	   (lambda* (#:key outputs #:allow-other-keys)
-	     (let* ((out (assoc-ref outputs "out"))
-		    (stubs (string-append out "/lib/ocaml/site-lib/stubslibs"))
-		    (lib (string-append out "/lib/ocaml/site-lib/sodium")))
-	       (mkdir-p stubs)
-	       (symlink (string-append lib "/dllsodium_stubs.so")
-			(string-append stubs "/dllsodium_stubs.so"))
-	       #t)))
-	 (add-before 'build 'set-patch-makefile
-	   (lambda* (#:key inputs #:allow-other-keys)
-	     ;; Use gcc instead of cc
-	     (substitute* "myocamlbuild.ml"
-	       (("\"cc\"") "\"gcc\""))
-	     ;; Add ocaml-integers include path
-	     (substitute* "myocamlbuild.ml"
-	       (("A\"-o\";") (string-append "A(\"-I\"); "
-					    "A \"" (assoc-ref inputs "ocaml-integers") "/lib/ocaml/site-lib/integers\"; "
-					    "A\"-o\";")))
-	     ;; Add dll load path
-	     (substitute* "Makefile"
-	       (("^OCAMLBUILD=..ENV. ocamlbuild")
-		(string-append "OCAMLBUILD=$(ENV) ocamlbuild -ocamlc 'ocamlc -dllpath-all' -cflags -ccopt,-I'" (assoc-ref inputs "ocaml-integers") "/lib/ocaml/site-lib/integers' -cflags -ccopt,-Wno-discarded-qualifiers")))
-	     #t)))))
-    (propagated-inputs
-     `(("libsodium" ,libsodium)
-       ("ocaml-integers" ,ocaml-integers)
-       ("ocaml-ctypes" ,ocaml-ctypes)))
-    (native-inputs
-     `(("ocaml-findlib" ,ocaml-findlib)
-       ("ocamlbuild" ,ocamlbuild)
-       ("ocaml-ounit" ,ocaml-ounit)))
-    (home-page
-     "https://github.com/dsheets/ocaml-sodium/")
-    (synopsis "Binding to libsodium UNAUDITED")
-    (description
-     "Binding to libsodium 1.0.9+, a shared library wrapper for djb's NaCl.
+;; (define-public ocaml-sodium
+;;   (package
+;;     (name "ocaml-sodium")
+;;     (version "0.6.0")
+;;     (source
+;;      (origin
+;;        (method url-fetch)
+;;        (uri "https://github.com/dsheets/ocaml-sodium/archive/0.6.0.tar.gz")
+;;        (sha256
+;; 	(base32
+;; 	 "0gilc2mg0kf4rag95cl507rajcasdpnff8idv8cf58c1b90lvqbf"))))
+;;     (build-system ocaml-build-system)
+;;     (arguments
+;;      `(
+;;        #:phases
+;;        (modify-phases %standard-phases
+;; 	 (delete 'configure)
+;; 	 (add-after 'install 'link-stubs
+;; 	   (lambda* (#:key outputs #:allow-other-keys)
+;; 	     (let* ((out (assoc-ref outputs "out"))
+;; 		    (stubs (string-append out "/lib/ocaml/site-lib/stubslibs"))
+;; 		    (lib (string-append out "/lib/ocaml/site-lib/sodium")))
+;; 	       (mkdir-p stubs)
+;; 	       (symlink (string-append lib "/dllsodium_stubs.so")
+;; 			(string-append stubs "/dllsodium_stubs.so"))
+;; 	       #t)))
+;; 	 (add-before 'build 'set-patch-makefile
+;; 	   (lambda* (#:key inputs #:allow-other-keys)
+;; 	     ;; Use gcc instead of cc
+;; 	     (substitute* "myocamlbuild.ml"
+;; 	       (("\"cc\"") "\"gcc\""))
+;; 	     ;; Add ocaml-integers include path
+;; 	     (substitute* "myocamlbuild.ml"
+;; 	       (("A\"-o\";") (string-append "A(\"-I\"); "
+;; 					    "A \"" (assoc-ref inputs "ocaml-integers") "/lib/ocaml/site-lib/integers\"; "
+;; 					    "A\"-o\";")))
+;; 	     ;; Add dll load path
+;; 	     (substitute* "Makefile"
+;; 	       (("^OCAMLBUILD=..ENV. ocamlbuild")
+;; 		(string-append "OCAMLBUILD=$(ENV) ocamlbuild -ocamlc 'ocamlc -dllpath-all' -cflags -ccopt,-I'" (assoc-ref inputs "ocaml-integers") "/lib/ocaml/site-lib/integers' -cflags -ccopt,-Wno-discarded-qualifiers")))
+;; 	     #t)))))
+;;     (propagated-inputs
+;;      `(("libsodium" ,libsodium)
+;;        ("ocaml-integers" ,ocaml-integers)
+;;        ("ocaml-ctypes" ,ocaml-ctypes)))
+;;     (native-inputs
+;;      `(("ocaml-findlib" ,ocaml-findlib)
+;;        ("ocamlbuild" ,ocamlbuild)
+;;        ("ocaml-ounit" ,ocaml-ounit)))
+;;     (home-page
+;;      "https://github.com/dsheets/ocaml-sodium/")
+;;     (synopsis "Binding to libsodium UNAUDITED")
+;;     (description
+;;      "Binding to libsodium 1.0.9+, a shared library wrapper for djb's NaCl.
 
-Binding uses ctypes' stub generation system. GNU/Linux, FreeBSD, and OS
-X are supported.
+;; Binding uses ctypes' stub generation system. GNU/Linux, FreeBSD, and OS
+;; X are supported.
 
-UNAUDITED")
-    (license #f)))
+;; UNAUDITED")
+;;     (license #f)))
+
+;; (define-public ocaml-sodium2
+;;   (package
+;;     (name "ocaml-sodium2")
+;;     (version "0.6.0")
+;;     (source
+;;      (origin
+;;        (method url-fetch)
+;;        (uri "https://github.com/dsheets/ocaml-sodium/archive/0.6.0.tar.gz")
+;;        (sha256
+;; 	(base32
+;; 	 "0gilc2mg0kf4rag95cl507rajcasdpnff8idv8cf58c1b90lvqbf"))))
+;;     (build-system ocaml-build-system)
+;;     (arguments
+;;      `(
+;;        #:phases
+;;        (modify-phases %standard-phases
+;; 	 (delete 'configure)
+;; 	 (add-after 'install 'link-stubs
+;; 	   (lambda* (#:key outputs #:allow-other-keys)
+;; 	     (let* ((out (assoc-ref outputs "out"))
+;; 		    (stubs (string-append out "/lib/ocaml/site-lib/stubslibs"))
+;; 		    (lib (string-append out "/lib/ocaml/site-lib/sodium")))
+;; 	       (mkdir-p stubs)
+;; 	       (symlink (string-append lib "/dllsodium_stubs.so")
+;; 			(string-append stubs "/dllsodium_stubs.so"))
+;; 	       #t)))
+;; 	 (add-before 'build 'set-patch-makefile
+;; 	   (lambda* (#:key inputs #:allow-other-keys)
+;; 	     ;; Use gcc instead of cc
+;; 	     (substitute* "myocamlbuild.ml"
+;; 	       (("\"cc\"") "\"gcc\""))
+;; 	     ;; Add ocaml-integers include path
+;; 	     (substitute* "myocamlbuild.ml"
+;; 	       (("A\"-o\";") (string-append "A(\"-I\"); "
+;; 					    "A \"" (assoc-ref inputs "ocaml-integers") "/lib/ocaml/site-lib/integers\"; "
+;; 					    "A\"-o\";")))
+;; 	     ;; Add dll load path
+;; 	     (substitute* "Makefile"
+;; 	       (("^OCAMLBUILD=..ENV. ocamlbuild")
+;; 		(string-append "OCAMLBUILD=$(ENV) ocamlbuild -ocamlc 'ocamlc -dllpath-all' -cflags -ccopt,-I'" (assoc-ref inputs "ocaml-integers") "/lib/ocaml/site-lib/integers' -cflags -ccopt,-Wno-discarded-qualifiers")))
+;; 	     #t)))))
+;;     (propagated-inputs
+;;      `(("libsodium" ,libsodium)
+;;        ("ocaml-integers" ,ocaml-integers)
+;;        ("ocaml-ctypes" ,ocaml-ctypes)))
+;;     (native-inputs
+;;      `(("ocaml-findlib" ,ocaml-findlib)
+;;        ("ocamlbuild" ,ocamlbuild)
+;;        ("ocaml-ounit" ,ocaml-ounit)))
+;;     (home-page
+;;      "https://github.com/dsheets/ocaml-sodium/")
+;;     (synopsis "Binding to libsodium UNAUDITED")
+;;     (description
+;;      "Binding to libsodium 1.0.9+, a shared library wrapper for djb's NaCl.
+
+;; Binding uses ctypes' stub generation system. GNU/Linux, FreeBSD, and OS
+;; X are supported.
+
+;; UNAUDITED")
+;;     (license #f)))
 
 (define-public sof-firmware
   (package
