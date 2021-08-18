@@ -38,7 +38,39 @@
   #:use-module (guix build-system meson)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages wm)
   #:use-module (gnu packages gawk))
+
+(define-public dwl-custom
+  (package
+    (inherit dwl)
+    (name "dwl-custom")
+    (arguments
+     `(#:tests? #f                      ; no tests
+       #:make-flags
+       (list
+        (string-append "CC=" ,(cc-for-target))
+        (string-append "PREFIX=" (assoc-ref %outputs "out")))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)            ; no configure
+         (add-after 'install 'add-desktop-file-for-session-managers
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (xsessions (string-append out "/share/xsessions")))
+               (mkdir-p xsessions)
+               (with-output-to-file (string-append xsessions "/dwl.desktop")
+                 (lambda ()
+                   (display "[Desktop Entry]")
+                   (newline)
+                   (display "Name=dwl")
+                   (newline)
+                   (display "Comment=dwl window manager")
+                   (newline)
+                   (display (string-append "Exec=" out "/bin/dwl"))
+                   (newline)
+                   (display "Type=Application")
+                   (newline)))))))))))
 
 (define dune2.8.5-bootstrap
   (package
