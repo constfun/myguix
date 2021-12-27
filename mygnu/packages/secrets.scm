@@ -1665,14 +1665,14 @@ largest industrial user of OCaml.
 (define-public secrets
   (package
     (name "secrets")
-    (version "1.0.0")
+    (version "1.0.1")
     (source
      (origin
        (method url-fetch)
-       (uri "https://github.com/constfun/secrets/archive/f620d2c5a0723e17a4b0239bfdd081a8ff8c16d6.tar.gz")
+       (uri "https://github.com/constfun/secrets/archive/a06f749f733516bf166b96ab4103a26fb0e5048f.tar.gz")
        (sha256
 	(base32
-         "08xvc6yp7hkw5cq69v1azqs7vh0vm4k2xl9wr2rz1vjiscp68anr"))))
+         "1bk7c6m9iqb860c8kzfv489q5gmgjwxfz8kqljby8k1i1gbrgdbx"))))
     ;; (outputs '("out" "lib" "bin"))
     (build-system dune-build-system)
     (arguments
