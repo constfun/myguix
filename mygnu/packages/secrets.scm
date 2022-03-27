@@ -3066,3 +3066,98 @@ libraries such as stdio:
 
   https://github.com/janestreet/stdio")
    (license license:expat)))
+
+
+(define-public ocaml-incr-map
+  (package
+  (name "ocaml-incr-map")
+  (version "0.15.0")
+  (source
+    (origin
+      (method url-fetch)
+      (uri "https://ocaml.janestreet.com/ocaml-core/v0.15/files/incr_map-v0.15.0.tar.gz")
+      (sha256
+        (base32 "0n21hw7m3hibg62lc5lii78kwgwfxw670gsimgbj9cjfxkald1f2"))))
+  (build-system dune-build-system)
+   (arguments `(#:tests? #f))
+  (propagated-inputs
+    (list ocaml-abstract-algebra
+          ocaml-core
+          ocaml-incremental
+          ocaml-ppx-jane
+          ocaml-ppx-pattern-bind))
+  (properties `((upstream-name . "incr_map")))
+  (home-page "https://github.com/janestreet/incr_map")
+  (synopsis "Helpers for incremental operations on map like data structures")
+  (description
+    " A set of functions for operating incrementally and efficiently on map like data
+structures.  This leverages new functionality in Incremental along with the
+ability to efficiently diff map data structures using =Map.symmetric_diff=.")
+  (license license:expat)))
+
+(define-public ocaml-incr-select
+(package
+  (name "ocaml-incr-select")
+  (version "0.15.0")
+  (source
+    (origin
+      (method url-fetch)
+      (uri "https://ocaml.janestreet.com/ocaml-core/v0.15/files/incr_select-v0.15.0.tar.gz")
+      (sha256
+        (base32 "1r8g4al1cmyn4scsskhj3palkjr3mfyl4bxzx1br9bj114akp6nl"))))
+  (build-system dune-build-system)
+   (arguments `(#:tests? #f))
+  (propagated-inputs (list ocaml-core ocaml-incremental ocaml-ppx-jane))
+  (properties `((upstream-name . "incr_select")))
+  (home-page "https://github.com/janestreet/incr_select")
+  (synopsis "Handling of large set of incremental outputs from a single input")
+  (description
+    " Ability to create a large set of incremental outputs based on a single
+incremental input, where some subset of the outputs are selected to have
+specific values, and the remainder are left with a specified default value.  The
+outputs are updated in time proportional to the number of outputs that are
+changed, independent of the number of outputs that exist.")
+  (license license:expat)))
+
+(define-public ocaml-abstract-algebra
+  (package
+  (name "ocaml-abstract-algebra")
+  (version "0.15.0")
+  (source
+    (origin
+      (method url-fetch)
+      (uri "https://ocaml.janestreet.com/ocaml-core/v0.15/files/abstract_algebra-v0.15.0.tar.gz")
+      (sha256
+        (base32 "0qc9j06b9kqpybfbi4lwgyk8xl1s6pi70w0pzfni2cfkab4b7g2r"))))
+  (build-system dune-build-system)
+   (arguments `(#:tests? #f))
+  (propagated-inputs (list ocaml-base ocaml-ppx-jane))
+  (properties `((upstream-name . "abstract_algebra")))
+  (home-page "https://github.com/janestreet/abstract_algebra")
+  (synopsis "A small library describing abstract algebra concepts")
+  (description
+    " A library describing abstract algebra concepts.  Currently, it includes
+Commutative_group and Vector_space.")
+  (license license:expat)))
+
+(define-public ocaml-ppx-pattern-bind
+  (package
+  (name "ocaml-ppx-pattern-bind")
+  (version "0.15.0")
+  (source
+    (origin
+      (method url-fetch)
+      (uri "https://ocaml.janestreet.com/ocaml-core/v0.15/files/ppx_pattern_bind-v0.15.0.tar.gz")
+      (sha256
+        (base32 "1c1m414ilxmq2k9lc7jj6hbkpn2yk568jdd2vn74xxhlx54lmqhm"))))
+  (build-system dune-build-system)
+   (arguments `(#:tests? #f))
+  (propagated-inputs (list ocaml-base ocaml-ppx-let ocaml-ppxlib))
+  (properties `((upstream-name . "ppx_pattern_bind")))
+  (home-page "https://github.com/janestreet/ppx_pattern_bind")
+  (synopsis "A ppx for writing fast incremental bind nodes in a pattern match")
+  (description
+    " A ppx rewriter that is intended for use with Incremental.  It makes it easier
+to write incremental computations using pattern-matching in a way that causes
+incremental nodes to fire as little as possible.")
+  (license license:expat)))
